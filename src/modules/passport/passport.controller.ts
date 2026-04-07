@@ -14,10 +14,11 @@ export class PassportController {
 
   @Post('analyze')
   @ApiOperation({ summary: 'Analyze passport images and extract structured data' })
-  @UseInterceptors(FilesInterceptor('files'))
+  @UseInterceptors(FilesInterceptor('files', 2))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Upload one or more passport images (JPEG/PNG) to extract their information. Max size: 5MB per file.',
+    description:
+      'Upload from 1 to 2 images for one document. Max size: 5MB per file.',
     schema: {
       type: 'object',
       required: ['files'],

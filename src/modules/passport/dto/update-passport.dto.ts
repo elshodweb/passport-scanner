@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsNumber, IsDate } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsDate, IsArray } from 'class-validator';
 
 export class UpdatePassportDto {
   @ApiPropertyOptional({ description: 'First name of the passport holder', example: 'Elshodjon' })
@@ -29,15 +29,32 @@ export class UpdatePassportDto {
   @IsDate()
   dateOfBirth?: Date;
 
-  @ApiPropertyOptional({ description: 'Place of birth', example: 'Chust Tumani' })
+  @ApiPropertyOptional({ description: 'Place of birth', example: 'Yunusobod Tumani' })
   @IsOptional()
   @IsString()
   placeOfBirth?: string;
 
-  @ApiPropertyOptional({ description: 'Passport number', example: 'AC2023125' })
+  @ApiPropertyOptional({
+    description:
+      'Place of issue (ID card: "Berilgan joyi / Place of issue", passport: "KIM TOMONIDAN BERILGAN")',
+    example: 'IIV 60010',
+  })
+  @IsOptional()
+  @IsString()
+  placeOfIssue?: string;
+
+  @ApiPropertyOptional({ description: 'Passport number', example: 'AC123456' })
   @IsOptional()
   @IsString()
   passportNumber?: string;
+
+  @ApiPropertyOptional({
+    description: 'Personal number (e.g. 50345678901234)',
+    example: '52606035970016',
+  })
+  @IsOptional()
+  @IsString()
+  personalNumber?: string;
 
   @ApiPropertyOptional({ description: 'Passport expiration date', example: '2029-06-27T00:00:00.000Z' })
   @IsOptional()
@@ -61,4 +78,14 @@ export class UpdatePassportDto {
   @Type(() => Number)
   @IsNumber()
   precision?: number;
+
+  @ApiPropertyOptional({
+    description: 'Stored document image object names in storage',
+    example: ['1775549340986-passport-front.jpg', '1775549340987-passport-back.jpg'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageUrls?: string[];
 }

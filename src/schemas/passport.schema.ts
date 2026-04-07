@@ -10,7 +10,7 @@ export class Passport {
   @Prop({ required: true })
   lastName: string;
 
-  @Prop({ required: false, default: '' })
+  @Prop({ required: false })
   middleName: string;
 
   @Prop({ required: true })
@@ -22,8 +22,14 @@ export class Passport {
   @Prop({ required: true })
   placeOfBirth: string;
 
+  @Prop({ required: true})
+  placeOfIssue: string;
+
   @Prop({ required: true })
   passportNumber: string;
+
+  @Prop({ required: true })
+  personalNumber: string;
 
   @Prop({ required: true })
   passportExpirationDate: Date;
@@ -31,8 +37,8 @@ export class Passport {
   @Prop({ required: true })
   passportIssuingDate: Date;
 
-  @Prop({ required: true })
-  url: string;
+  @Prop({ type: [String], required: true, default: [] })
+  imageUrls: string[];
 
   @Prop({ required: true })
   nationality: string;

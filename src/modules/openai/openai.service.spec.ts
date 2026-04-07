@@ -37,23 +37,25 @@ describe('OpenaiService', () => {
         {
           message: {
             content: JSON.stringify({
+              isPassport: true,
               firstName: 'Jane',
               lastName: 'Doe',
               passportNumber: 'A12345678',
               nationality: 'US',
-              precision: '98%',
+              precision: 98,
             }),
           },
         },
       ],
     });
 
-    await expect(service.extractPassportData('base64-image')).resolves.toEqual({
+    await expect(service.extractPassportData(['base64-image'])).resolves.toEqual({
+      isPassport: true,
       firstName: 'Jane',
       lastName: 'Doe',
       passportNumber: 'A12345678',
       nationality: 'US',
-      precision: '98%',
+      precision: 98,
     });
     expect(createMock).toHaveBeenCalledTimes(1);
   });
@@ -69,8 +71,8 @@ describe('OpenaiService', () => {
       ],
     });
 
-    await expect(service.extractPassportData('base64-image')).rejects.toThrow(
-      'OpenAI returned empty response content',
+    await expect(service.extractPassportData(['base64-image'])).rejects.toThrow(
+      'Error extracting passport data',
     );
   });
 });

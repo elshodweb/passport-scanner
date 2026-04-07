@@ -16,46 +16,62 @@ export class PassportService {
   ) {}
 
   async analizePassport(files: Express.Multer.File[]) {
-    this.logger.log(`Analizing ${files.length} passports...`);
-    const analizedDataArray: Passport[] = [];
-    for (const file of files) {
-      const analizedData = await this.openAI.extractPassportData(
-        file.buffer.toString('base64'),
+    if (files.length < 1 || files.length > 2) {
+      throw new BadRequestException(
+        'Please upload from 1 to 2 images for one document',
       );
-      if (!analizedData.isPassport) {
-        this.logger.debug('analizedData::', analizedData);
-        this.logger.error('This is not a passport image');
-        throw new BadRequestException('This is not a passport image');
-      }
-      const uploadedFile = await this.minio.uploadFile(file);
-      console.log(
-        'uploadedFile::',
-        await this.minio.getFileUrl(uploadedFile.storageName),
-      );
-
-      const passport = new this.passportModel({
-        firstName: analizedData.firstName,
-        lastName: analizedData.lastName,
-        middleName: analizedData.middleName,
-        gender: analizedData.gender,
-        dateOfBirth: analizedData.dateOfBirth,
-        placeOfBirth: analizedData.placeOfBirth,
-        passportNumber: analizedData.passportNumber,
-        passportIssuingDate: analizedData.passportIssuingDate,
-        passportExpirationDate: analizedData.passportExpirationDate,
-        nationality: analizedData.nationality,
-        precision: analizedData.precision,
-        url: uploadedFile.storageName,
-      });
-      const savedPassport = await passport.save();
-      analizedDataArray.push({
-        ...savedPassport.toObject() ,
-        url: uploadedFile.storageName   ? await this.minio.getFileUrl(uploadedFile.storageName) : '',
-      });
     }
-    this.logger.log(`Analized ${analizedDataArray.length} passports...`);
-    return analizedDataArray;
+
+    this.logger.log(`Analyzing 1 document from ${files.length} image(s)...`);
+
+    const analizedData = await this.openAI.extractPassportData(
+      files.map((file) => file.buffer.toString('base64')),
+    );
+
+    if (!analizedData.isPassport) {
+      this.logger.debug('analizedData::', analizedData);
+      this.logger.error('This is not a passport image');
+      throw new BadRequestException('This is not a passport image');
+    }
+
+    const uploadedFiles = await Promise.all(
+      files.map((file) => this.minio.uploadFile(file)),
+    );
+    const dateOfBirth = this.parseDateOrThrow(
+      analizedData.dateOfBirth,
+      'dateOfBirth',
+    );
+    const passportIssuingDate = this.parseDateOrThrow(
+      analizedData.passportIssuingDate,
+      'passportIssuingDate',
+    );
+    const passportExpirationDate = this.parseDateOrThrow(
+      analizedData.passportExpirationDate,
+      'passportExpirationDate',
+    );
+
+    const passport = new this.passportModel({
+      firstName: analizedData.firstName,
+      lastName: analizedData.lastName,
+      middleName: analizedData.middleName,
+      gender: analizedData.gender,
+      dateOfBirth,
+      placeOfBirth: analizedData.placeOfBirth,
+      placeOfIssue: analizedData.placeOfIssue,
+      passportNumber: analizedData.passportNumber,
+      personalNumber: analizedData.personalNumber,
+      passportIssuingDate,
+      passportExpirationDate,
+      nationality: analizedData.nationality,
+      precision: analizedData.precision,
+      imageUrls: uploadedFiles.map((file) => file.storageName),
+    });
+
+    const savedPassport = await passport.save();
+    this.logger.log(`Analyzed 1 document from ${files.length} image(s)...`);
+    return this.toResponseWithSignedImageUrls(savedPassport.toObject());
   }
+
   async getAllPassports(query: any = {}) {
     this.logger.log('Fetching all passports with filters');
     
@@ -101,11 +117,7 @@ export class PassportService {
 
     const data = await Promise.all(
       passports.map(async (p) => {
-        const obj = p.toObject();
-        if (obj.url) {
-          obj.url = await this.minio.getFileUrl(obj.url as string);
-        }
-        return obj;
+        return this.toResponseWithSignedImageUrls(p.toObject());
       })
     );
 
@@ -129,11 +141,33 @@ export class PassportService {
     if (!updated) {
       throw new BadRequestException('Passport not found');
     }
-    
-    const obj = updated.toObject();
-    if (obj.url) {
-      obj.url = await this.minio.getFileUrl(obj.url as string);
+
+    return this.toResponseWithSignedImageUrls(updated.toObject());
+  }
+
+  private async toResponseWithSignedImageUrls(obj: any) {
+    const storageNames: string[] = Array.isArray(obj.imageUrls)
+      ? obj.imageUrls
+      : obj.url
+        ? [obj.url]
+        : [];
+
+    const imageUrls = await Promise.all(
+      storageNames.map((name) => this.minio.getFileUrl(name)),
+    );
+
+    const { url, ...rest } = obj;
+    return {
+      ...rest,
+      imageUrls,
+    };
+  }
+
+  private parseDateOrThrow(value: unknown, fieldName: string): Date {
+    const parsedDate = new Date(String(value));
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException(`Invalid ${fieldName} received from OCR`);
     }
-    return obj;
+    return parsedDate;
   }
 }

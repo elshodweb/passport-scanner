@@ -59,15 +59,14 @@ export class MinioService implements OnModuleInit {
 
   // Дополнительный метод: если вам нужно получить новую ссылку позже
   async getFileUrl(fileName: string) {
-    
     const expiry = 24 * 60 * 60;
     return await this.minioClient.presignedGetObject(
       BUCKET_NAME,
       fileName,
       expiry,
       {
-        'Content-Type': 'image/jpeg',
-        'Content-Disposition': `inline; filename="${fileName}"`,
+        'response-content-type': 'image/jpeg',
+        'response-content-disposition': `inline; filename="${fileName}"`,
       },
     );
   }

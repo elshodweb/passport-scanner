@@ -47,21 +47,19 @@ describe('MinioService', () => {
   it('should upload files and return urls', async () => {
     minioClientMock.putObject.mockResolvedValue(undefined);
     minioClientMock.presignedGetObject.mockResolvedValue('http://example-url');
-    const files = [
-      {
-        originalname: 'passport.jpg',
-        buffer: Buffer.from('x'),
-        size: 1,
-      } as Express.Multer.File,
-    ];
+    const file = {
+      originalname: 'passport.jpg',
+      buffer: Buffer.from('x'),
+      size: 1,
+      mimetype: 'image/jpeg',
+    } as Express.Multer.File;
 
-    const result = await service.uploadFile(files);
+    const result = await service.uploadFile(file);
 
     expect(minioClientMock.putObject).toHaveBeenCalledTimes(1);
     expect(minioClientMock.presignedGetObject).toHaveBeenCalledTimes(1);
-    expect(result).toHaveLength(1);
-    expect(result[0].originalName).toBe('passport.jpg');
-    expect(result[0].url).toBe('http://example-url');
+    expect(result.originalName).toBe('passport.jpg');
+    expect(result.url).toBe('http://example-url');
   });
 
   it('should return a presigned url for getFileUrl', async () => {
