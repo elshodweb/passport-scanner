@@ -10,26 +10,36 @@ export class Passport {
   @Prop({ required: true })
   lastName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: '' })
   middleName: string;
-  
+
   @Prop({ required: true })
   gender: string;
-  
+
   @Prop({ required: true })
   dateOfBirth: Date;
-  
+
   @Prop({ required: true })
   placeOfBirth: string;
-  
+
   @Prop({ required: true })
   passportNumber: string;
-  
+
   @Prop({ required: true })
   passportExpirationDate: Date;
-  
+
   @Prop({ required: true })
   passportIssuingDate: Date;
+
+  @Prop({ required: true })
+  url: string;
+
+  @Prop({ required: true })
+  nationality: string;
+
+  @Prop({ required: true })
+  precision: number;
+
 }
 
 export const PassportSchema = SchemaFactory.createForClass(Passport);
