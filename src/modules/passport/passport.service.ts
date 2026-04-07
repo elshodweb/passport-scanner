@@ -9,6 +9,7 @@ import { Logger } from '@nestjs/common';
 @Injectable()
 export class PassportService {
   private readonly logger = new Logger(PassportService.name);
+  private static readonly UNKNOWN_VALUE = "aniq malumot yo'q";
   constructor(
     @InjectModel(Passport.name) private readonly passportModel: Model<Passport>,
     @Inject() private readonly openAI: OpenaiService,
@@ -37,32 +38,24 @@ export class PassportService {
     const uploadedFiles = await Promise.all(
       files.map((file) => this.minio.uploadFile(file)),
     );
-    const dateOfBirth = this.parseDateOrThrow(
-      analizedData.dateOfBirth,
-      'dateOfBirth',
-    );
-    const passportIssuingDate = this.parseDateOrThrow(
-      analizedData.passportIssuingDate,
-      'passportIssuingDate',
-    );
-    const passportExpirationDate = this.parseDateOrThrow(
-      analizedData.passportExpirationDate,
-      'passportExpirationDate',
-    );
+    const dateOfBirth = this.parseDateOrNull(analizedData.dateOfBirth);
+    const passportIssuingDate = this.parseDateOrNull(analizedData.passportIssuingDate);
+    const passportExpirationDate = this.parseDateOrNull(analizedData.passportExpirationDate);
+    const gender = this.normalizeGender(analizedData.gender);
 
     const passport = new this.passportModel({
-      firstName: analizedData.firstName,
-      lastName: analizedData.lastName,
-      middleName: analizedData.middleName,
-      gender: analizedData.gender,
+      firstName: this.textOrUnknown(analizedData.firstName),
+      lastName: this.textOrUnknown(analizedData.lastName),
+      middleName: this.textOrUnknown(analizedData.middleName),
+      gender,
       dateOfBirth,
-      placeOfBirth: analizedData.placeOfBirth,
-      placeOfIssue: analizedData.placeOfIssue,
-      passportNumber: analizedData.passportNumber,
-      personalNumber: analizedData.personalNumber,
+      placeOfBirth: this.textOrUnknown(analizedData.placeOfBirth),
+      placeOfIssue: this.textOrUnknown(analizedData.placeOfIssue),
+      passportNumber: this.textOrUnknown(analizedData.passportNumber),
+      personalNumber: this.textOrUnknown(analizedData.personalNumber),
       passportIssuingDate,
       passportExpirationDate,
-      nationality: analizedData.nationality,
+      nationality: this.textOrUnknown(analizedData.nationality),
       precision: analizedData.precision,
       imageUrls: uploadedFiles.map((file) => file.storageName),
     });
@@ -163,11 +156,32 @@ export class PassportService {
     };
   }
 
-  private parseDateOrThrow(value: unknown, fieldName: string): Date {
-    const parsedDate = new Date(String(value));
-    if (Number.isNaN(parsedDate.getTime())) {
-      throw new BadRequestException(`Invalid ${fieldName} received from OCR`);
+  private parseDateOrNull(value: unknown): Date | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
     }
-    return parsedDate;
+
+    const parsedDate = new Date(String(value));
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  private textOrUnknown(value: unknown): string {
+    const text = String(value ?? '').trim();
+    return text.length > 0 ? text : PassportService.UNKNOWN_VALUE;
+  }
+
+  private normalizeGender(value: unknown): string {
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
+
+    if (normalized === 'F' || normalized === 'FEMALE' || normalized === 'AYOL') {
+      return 'AYOL';
+    }
+    if (normalized === 'M' || normalized === 'MALE' || normalized === 'ERKAK') {
+      return 'ERKAK';
+    }
+
+    return this.textOrUnknown(value);
   }
 }

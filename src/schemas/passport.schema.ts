@@ -16,7 +16,7 @@ export class Passport {
   @Prop({ required: true })
   gender: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Date, required: false, default: null })
   dateOfBirth: Date;
 
   @Prop({ required: true })
@@ -31,10 +31,10 @@ export class Passport {
   @Prop({ required: true })
   personalNumber: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Date, required: false, default: null })
   passportExpirationDate: Date;
 
-  @Prop({ required: true })
+  @Prop({ type: Date, required: false, default: null })
   passportIssuingDate: Date;
 
   @Prop({ type: [String], required: true, default: [] })

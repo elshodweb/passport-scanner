@@ -23,7 +23,7 @@ export class OpenaiService {
           {
             role: 'system',
             content:
-              'Extract passport/ID details into a structured JSON format. Set isPassport=true whenever the image(s) contain a real passport/ID document with readable document fields, even if the photo is taken on a white A4 sheet, printed copy, scan, or handheld phone camera shot with perspective/noise. Set isPassport=false only when there is no passport/ID document content to extract. Name priority rule: if multiple name spellings exist (national-script transliteration line vs MRZ transliteration), prefer the primary visual name line in the document data section and use MRZ only as fallback. Extract personalNumber with these rules: (1) Passport MRZ line 2: take 14 chars from the end, skipping the last 2 chars. Example AC20231255UZB0306263M29062765260603597001644 -> 52606035970016. (2) ID card: prefer explicit "Shaxsiy raqam / Personal number" value from the back side; if absent, extract from MRZ-like line pattern such as IUUZBAE1809479640312930250063< -> 40312930250063.',
+              'Extract passport/ID details into a structured JSON format. If any information is not clear, missing, or unreadable, do not guess or write random things; just set the field to null.  Name priority rule: if multiple name spellings exist (national-script transliteration line vs MRZ transliteration), prefer the primary visual name line in the document data section and use MRZ only as fallback. ',
           },
           {
             role: 'user',
@@ -51,61 +51,61 @@ export class OpenaiService {
                 isPassport: {
                   type: 'boolean',
                   description:
-                    'True if the uploaded image(s) contain a passport or ID document and document fields are present/readable, regardless of capture style (scan, A4 sheet, phone photo, perspective/lighting/noise). False only when document content is absent.',
+                    'Set isPassport=true whenever the image(s) contain a real passport/ID document with readable document fields, even if the photo is taken on a white A4 sheet, printed copy, scan, or handheld phone camera shot with perspective/noise. Set isPassport=false only when there is no passport/ID document content to extract. If the document is not a passport or ID, set isPassport=false.',
                 },
                 firstName: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
                     'First name of the holder from the primary data line. If there is a conflict with MRZ/transliteration variants, keep the primary visual data-line version and do not overwrite it with MRZ.',
                 },
                 lastName: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
                     "Last name of the holder from the primary data line. If multiple variants exist (e.g. To'XTAMURODOV vs TUKHTAMURODOV), choose the primary visual data-line version and use MRZ only as fallback.",
                 },
                 middleName: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
-                    'Middle name or Patronymic (Father\'s name, e.g., "OTASINING ISMI"). Extract if present in any language section. Return empty string if truly none.',
+                    'Middle name or Patronymic (Father\'s name, e.g., "OTASINING ISMI"). Extract if present in any language section. Return null if truly none.',
                 },
                 gender: {
-                  type: 'string',
-                  description: 'Gender of the passport holder (e.g. M, F)',
+                  type: ['string', 'null'],
+                  description: 'Gender of the passport holder. MUST be exactly "M" or "F". Translate local terms (e.g. "AYOL" -> "F", "ERKAK" -> "M").',
                 },
                 dateOfBirth: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
                     'Date of birth of the passport holder (YYYY-MM-DD)',
                 },
                 placeOfBirth: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description: 'Place of birth of the passport holder',
                 },
                 placeOfIssue: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
-                    'Place of issue. For ID card extract from label "Berilgan joyi / Place of issue" (often on back side). For passport extract issuing authority/place from "KIM TOMONIDAN BERILGAN".',
+                    'Place of issue. For ID card extract from label "Berilgan joyi / Place of issue" (often on back side). For passport extract issuing authority/place from "KIM TOMONIDAN BERILGAN". and most cases you can see IIV => ichki ishlar vazirligi',
                 },
                 passportNumber: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description: 'Passport number',
                 },
                 personalNumber: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description:
-                    'Personal number (14 digits for UZ passport/ID). For passport derive from MRZ line 2 by taking 14 chars from the end excluding final 2 check chars; for ID card use labeled "Shaxsiy raqam / Personal number" value or fallback to MRZ-like line extraction.',
+                    'Personal Number (PINFL). MUST be exactly 14 digits. CRITICAL WARNING: DO NOT calculate or invent this number. You must exact-copy it from the text. Rules: (1) Passports: Look at the very bottom MRZ line (Line 2). Find the 6-digit Expiration Date (e.g., 271010) and its 1-digit check number (e.g., 9). The PINFL is the EXACT sequence of 14 digits immediately following that. It is exactly the 14 digits located just before the final 2 digits of the line. Example: If the MRZ ends with "...F27101096230901640002140", the 14-digit PINFL is "62309016400021". (2) ID cards: Extract the 14-digit number explicitly printed next to "Shaxsiy raqam / Personal number". If absent, extract from the ID MRZ where the 14 digits appear right before the final "<" symbol.',
                 },
                 passportIssuingDate: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description: 'Date of issue of the passport (YYYY-MM-DD)',
                 },
                 passportExpirationDate: {
-                  type: 'string',
+                  type: ['string', 'null'],
                   description: 'Expiration date of the passport (YYYY-MM-DD)',
                 },
                 nationality: {
-                  type: 'string',
-                  description: 'Nationality of the passport holder',
+                  type: ['string', 'null'],
+                  description: 'Ethnic nationality of the passport holder (e.g., "UZBEK", "RUSSIAN", "TAJIK", "KAZAKH", etc.). Extract this from the "MILLATI" field. CRITICAL: DO NOT return the country name (like "UZBEKISTAN", "O\'ZBEKISTON", etc.). Translate the local ethnic term to English (e.g., "O\'ZBEK" -> "UZBEK", "RUS" -> "RUSSIAN", etc.).',
                 },
                 precision: {
                   type: 'number',
