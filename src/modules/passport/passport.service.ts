@@ -138,6 +138,29 @@ export class PassportService {
     return this.toResponseWithSignedImageUrls(updated.toObject());
   }
 
+  async deletePassport(id: string) {
+    this.logger.log(`Deleting passport ${id}`);
+    const passport = await this.passportModel.findById(id).exec();
+    
+    if (!passport) {
+      throw new BadRequestException('Passport not found');
+    }
+
+    const imageUrls = passport.imageUrls || [];
+    if (imageUrls.length > 0) {
+      await Promise.all(
+        imageUrls.map((fileName) => 
+          this.minio.deleteFile(fileName).catch((err) => 
+            this.logger.warn(`Failed to delete minio file ${fileName}: ${err.message}`)
+          )
+        ),
+      );
+    }
+
+    await this.passportModel.findByIdAndDelete(id).exec();
+    return { success: true, message: 'Passport deleted successfully' };
+  }
+
   private async toResponseWithSignedImageUrls(obj: any) {
     const storageNames: string[] = Array.isArray(obj.imageUrls)
       ? obj.imageUrls

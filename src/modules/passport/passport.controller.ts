@@ -2,7 +2,7 @@ import { Controller, HttpStatus, Query } from '@nestjs/common';
 import { GetPassportsDto } from './dto/get-passports.dto';
 import { UpdatePassportDto } from './dto/update-passport.dto';
 import { PassportService } from './passport.service';
-import { Post, UploadedFiles, UseInterceptors, ParseFilePipeBuilder, Get, Patch, Param, Body } from '@nestjs/common';
+import { Post, UploadedFiles, UseInterceptors, ParseFilePipeBuilder, Get, Patch, Delete, Param, Body } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -58,5 +58,13 @@ export class PassportController {
   @ApiResponse({ status: 400, description: 'Passport not found or bad data' })
   async updatePassport(@Param('id') id: string, @Body() updateData: UpdatePassportDto) {
     return this.passportService.updatePassport(id, updateData);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a specific passport by ID' })
+  @ApiResponse({ status: 200, description: 'Passport deleted successfully' })
+  @ApiResponse({ status: 400, description: 'Passport not found' })
+  async deletePassport(@Param('id') id: string) {
+    return this.passportService.deletePassport(id);
   }
 }

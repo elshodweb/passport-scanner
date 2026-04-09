@@ -57,7 +57,6 @@ export class MinioService implements OnModuleInit {
     }
   }
 
-  // Дополнительный метод: если вам нужно получить новую ссылку позже
   async getFileUrl(fileName: string) {
     const expiry = 24 * 60 * 60;
     return await this.minioClient.presignedGetObject(
@@ -69,5 +68,15 @@ export class MinioService implements OnModuleInit {
         'response-content-disposition': `inline; filename="${fileName}"`,
       },
     );
+  }
+
+  async deleteFile(fileName: string) {
+    try {
+      this.logger.log(`Deleting file from Minio: ${fileName}`);
+      await this.minioClient.removeObject(BUCKET_NAME, fileName);
+    } catch (error) {
+      this.logger.error(`Error deleting file minio: ${error}`);
+      throw new InternalServerErrorException('Error deleting file');
+    }
   }
 }
