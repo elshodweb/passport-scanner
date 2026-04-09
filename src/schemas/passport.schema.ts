@@ -4,31 +4,31 @@ export type PassportDocument = Passport & Document;
 
 @Schema({ timestamps: true })
 export class Passport {
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   firstName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   lastName: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: null })
   middleName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   gender: string;
 
   @Prop({ type: Date, required: false, default: null })
   dateOfBirth: Date;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   placeOfBirth: string;
 
-  @Prop({ required: true})
+  @Prop({ required: false, default: null })
   placeOfIssue: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   passportNumber: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   personalNumber: string;
 
   @Prop({ type: Date, required: false, default: null })
@@ -40,7 +40,7 @@ export class Passport {
   @Prop({ type: [String], required: true, default: [] })
   imageUrls: string[];
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   nationality: string;
 
   @Prop({ required: true })

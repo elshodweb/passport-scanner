@@ -9,7 +9,6 @@ import { Logger } from '@nestjs/common';
 @Injectable()
 export class PassportService {
   private readonly logger = new Logger(PassportService.name);
-  private static readonly UNKNOWN_VALUE = "aniq malumot yo'q";
   constructor(
     @InjectModel(Passport.name) private readonly passportModel: Model<Passport>,
     @Inject() private readonly openAI: OpenaiService,
@@ -28,6 +27,7 @@ export class PassportService {
     const analizedData = await this.openAI.extractPassportData(
       files.map((file) => file.buffer.toString('base64')),
     );
+    
 
     if (!analizedData.isPassport) {
       this.logger.debug('analizedData::', analizedData);
@@ -44,18 +44,18 @@ export class PassportService {
     const gender = this.normalizeGender(analizedData.gender);
 
     const passport = new this.passportModel({
-      firstName: this.textOrUnknown(analizedData.firstName),
-      lastName: this.textOrUnknown(analizedData.lastName),
-      middleName: this.textOrUnknown(analizedData.middleName),
+      firstName: this.textOrNull(analizedData.firstName),
+      lastName: this.textOrNull(analizedData.lastName),
+      middleName: this.textOrNull(analizedData.middleName),
       gender,
       dateOfBirth,
-      placeOfBirth: this.textOrUnknown(analizedData.placeOfBirth),
-      placeOfIssue: this.textOrUnknown(analizedData.placeOfIssue),
-      passportNumber: this.textOrUnknown(analizedData.passportNumber),
-      personalNumber: this.textOrUnknown(analizedData.personalNumber),
+      placeOfBirth: this.textOrNull(analizedData.placeOfBirth),
+      placeOfIssue: this.textOrNull(analizedData.placeOfIssue),
+      passportNumber: this.textOrNull(analizedData.passportNumber),
+      personalNumber: this.textOrNull(analizedData.personalNumber),
       passportIssuingDate,
       passportExpirationDate,
-      nationality: this.textOrUnknown(analizedData.nationality),
+      nationality: this.textOrNull(analizedData.nationality),
       precision: analizedData.precision,
       imageUrls: uploadedFiles.map((file) => file.storageName),
     });
@@ -165,13 +165,16 @@ export class PassportService {
     return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
   }
 
-  private textOrUnknown(value: unknown): string {
-    const text = String(value ?? '').trim();
-    return text.length > 0 ? text : PassportService.UNKNOWN_VALUE;
+  private textOrNull(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+    const text = String(value).trim();
+    if (/aniq\s*m[a\'`’]?lumot/i.test(text)) return null;
+    return text.length > 0 ? text : null;
   }
 
-  private normalizeGender(value: unknown): string {
-    const normalized = String(value ?? '')
+  private normalizeGender(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+    const normalized = String(value)
       .trim()
       .toUpperCase();
 
@@ -182,6 +185,6 @@ export class PassportService {
       return 'ERKAK';
     }
 
-    return this.textOrUnknown(value);
+    return this.textOrNull(value);
   }
 }
